@@ -30,6 +30,7 @@ import com.netflix.eureka.registry.AbstractInstanceRegistry;
  *
  * @author Karthik Ranganathan, Greg Kim
  */
+//T就是 InstanceInfo
 public class Lease<T> {
 
     enum Action {

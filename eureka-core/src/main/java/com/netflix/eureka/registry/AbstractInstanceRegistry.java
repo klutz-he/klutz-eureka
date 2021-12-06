@@ -84,9 +84,11 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             .expireAfterAccess(1, TimeUnit.HOURS)
             .<String, InstanceStatus>build().asMap();
 
+    // recentRegisteredQueue recentCanceledQueue 没有实际业务意义，用来debugging、统计目地
     // CircularQueues here for debugging/statistics purposes only
     private final CircularQueue<Pair<Long, String>> recentRegisteredQueue;
     private final CircularQueue<Pair<Long, String>> recentCanceledQueue;
+
     private ConcurrentLinkedQueue<RecentlyChangedItem> recentlyChangedQueue = new ConcurrentLinkedQueue<RecentlyChangedItem>();
 
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
@@ -96,17 +98,24 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     private Timer deltaRetentionTimer = new Timer("Eureka-DeltaRetentionTimer", true);
     private Timer evictionTimer = new Timer("Eureka-EvictionTimer", true);
-    private final MeasuredRate renewsLastMin;
 
+    //上一分钟心跳统计
+    private final MeasuredRate renewsLastMin;
+    //过期长时间未发送心跳得实例
     private final AtomicReference<EvictionTask> evictionTaskRef = new AtomicReference<EvictionTask>();
 
+    //区域得eureka节点 和 regionNameVSRemoteRegistry 对应得上
     protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
+
+    //保护机制
     protected volatile int numberOfRenewsPerMinThreshold;
     protected volatile int expectedNumberOfRenewsPerMin;
 
     protected final EurekaServerConfig serverConfig;
     protected final EurekaClientConfig clientConfig;
     protected final ServerCodecs serverCodecs;
+
+    //读写缓存 和 只读缓存
     protected volatile ResponseCache responseCache;
 
     /**
@@ -634,6 +643,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
 
     /**
+     *
+     * 多区域部署eureka，可以跨区拉取实例
+     *
      * Returns the given app that is in this instance only, falling back to other regions transparently only
      * if specified in this client configuration.
      *
